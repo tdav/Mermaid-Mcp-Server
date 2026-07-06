@@ -25,10 +25,31 @@ dotnet run --project src/MermaidMcpServer
 может притормозить сервер при перегрузке очереди сообщений); это осознанный выбор для
 доверенных клиентов и локального использования, а не для публичного продакшена.
 
-Пример конфигурации клиента (Claude Code / совместимые):
-```json
-{ "mcpServers": { "mermaid": { "type": "sse", "url": "http://localhost:5000/sse" } } }
+### Подключение клиентов
+
+**Claude Code (CLI)** — поддерживает SSE напрямую:
+```bash
+claude mcp add --transport sse mermaid http://localhost:5000/sse
 ```
+Эквивалент в JSON-конфиге Claude Code: `{ "type": "sse", "url": "http://localhost:5000/sse" }`.
+
+**Claude Desktop** — файл `claude_desktop_config.json` НЕ принимает записи с полями
+`type`/`url` (такая запись отбрасывается: «not valid MCP server configurations and were
+skipped»). Desktop-конфиг поддерживает только stdio-серверы, поэтому к SSE подключаются
+через мост `mcp-remote` (требуется установленный Node.js / `npx`):
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:5000/sse", "--transport", "sse-only"]
+    }
+  }
+}
+```
+После правки конфига полностью перезапустите Claude Desktop (выход из трея, не просто
+закрытие окна). Флаг `--transport sse-only` указывает мосту использовать именно
+legacy-SSE эндпоинт `/sse`. Сервер (`dotnet run`) должен быть запущен до старта клиента.
 
 ### Инструменты
 - `render_mermaid(code, format=code|svg|png)` — предпросмотр/рендер. Поддержка ~18 типов диаграмм.
