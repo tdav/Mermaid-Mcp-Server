@@ -1,85 +1,65 @@
 using MermaidMcpServer.Options;
+using Mermaider;
 using Microsoft.Extensions.Options;
-using PuppeteerSharp;
+using SkiaSharp;
+using Svg.Skia;
 
 namespace MermaidMcpServer.Rendering;
 
-// Owns the single headless Chromium. Lazy: nothing is launched until the first render/validate call.
+// Pure-managed Mermaid renderer (Mermaider). No browser, no JS runtime, no child process.
+// SVG is produced natively; PNG is rasterized from that SVG via Svg.Skia/SkiaSharp.
+// ponytail: RenderSvg is synchronous CPU work wrapped in Task.FromResult; offload to
+// Task.Run only if diagram sizes ever make it block request threads noticeably.
 public sealed class HeadlessRenderer : IAsyncDisposable
 {
     private readonly RenderingOptions options;
-    private readonly SemaphoreSlim gate = new(1, 1);
-    private IBrowser? browser;
-    private string? mermaidJs;
 
     public HeadlessRenderer(IOptions<RenderingOptions> options) => this.options = options.Value;
 
     public bool IsEnabled => this.options.EnableServerRender;
 
-    public async Task<string> RenderSvgAsync(string code)
-    {
-        await using var page = await this.NewPageAsync();
-        return await page.EvaluateFunctionAsync<string>(
-            "async (code) => { const { svg } = await mermaid.render('g', code); return svg; }", code);
-    }
+    public Task<string> RenderSvgAsync(string code) =>
+        Task.FromResult(MermaidRenderer.RenderSvg(code));
 
-    public async Task<byte[]> RenderPngAsync(string code)
-    {
-        await using var page = await this.NewPageAsync();
-        await page.EvaluateFunctionAsync(
-            "async (code) => { const { svg } = await mermaid.render('g', code); document.getElementById('c').innerHTML = svg; }", code);
-        var element = await page.QuerySelectorAsync("#c svg");
-        if (element is null) throw new InvalidOperationException("Mermaid produced no SVG element to render as PNG.");
-        return await element.ScreenshotDataAsync();
-    }
+    public Task<byte[]> RenderPngAsync(string code) =>
+        Task.FromResult(RasterizeToPng(MermaidRenderer.RenderSvg(code)));
 
-    public async Task<(bool ok, string? error)> ValidateAsync(string code)
+    public Task<(bool ok, string? error)> ValidateAsync(string code)
     {
-        await using var page = await this.NewPageAsync();
-        var result = await page.EvaluateFunctionAsync<ValidationResult>(
-            "async (code) => { try { await mermaid.parse(code); return { ok: true, error: null }; } catch (e) { return { ok: false, error: String(e && e.message ? e.message : e) }; } }", code);
-        return (result.Ok, result.Error);
-    }
-
-    private async Task<IPage> NewPageAsync()
-    {
-        await this.EnsureBrowserAsync();
-        var page = await this.browser!.NewPageAsync();
-        await page.SetContentAsync($"<!doctype html><html><body><div id='c'></div><script>{this.mermaidJs}</script><script>mermaid.initialize({{ startOnLoad: false }});</script></body></html>");
-        return page;
-    }
-
-    private async Task EnsureBrowserAsync()
-    {
-        if (this.browser is not null) return;
-        await this.gate.WaitAsync();
         try
         {
-            if (this.browser is not null) return;
-            this.mermaidJs = await File.ReadAllTextAsync(
-                Path.Combine(AppContext.BaseDirectory, "wwwroot", "lib", "mermaid.min.js"));
-            await new BrowserFetcher().DownloadAsync();
-            this.browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+            MermaidRenderer.RenderSvg(code);
+            return Task.FromResult<(bool ok, string? error)>((true, null));
         }
-        finally
+        catch (Exception e)
         {
-            this.gate.Release();
+            return Task.FromResult<(bool ok, string? error)>((false, e.Message));
         }
     }
 
-    public async ValueTask DisposeAsync()
+    private static byte[] RasterizeToPng(string svg)
     {
-        if (this.browser is not null)
+        using var skSvg = new SKSvg();
+        skSvg.FromSvg(svg);
+        if (skSvg.Picture is null)
+            throw new InvalidOperationException("Mermaid produced no drawable SVG to render as PNG.");
+
+        var rect = skSvg.Picture.CullRect;
+        var width = Math.Max(1, (int)Math.Ceiling(rect.Width));
+        var height = Math.Max(1, (int)Math.Ceiling(rect.Height));
+
+        using var bitmap = new SKBitmap(width, height);
+        using (var canvas = new SKCanvas(bitmap))
         {
-            await this.browser.DisposeAsync();
-            this.browser = null;
+            canvas.Clear(SKColors.White);
+            canvas.Translate(-rect.Left, -rect.Top);
+            canvas.DrawPicture(skSvg.Picture);
         }
-        this.gate.Dispose();
+
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        return data.ToArray();
     }
 
-    private sealed class ValidationResult
-    {
-        public bool Ok { get; set; }
-        public string? Error { get; set; }
-    }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

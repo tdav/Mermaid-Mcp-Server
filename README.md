@@ -2,7 +2,7 @@
 
 Сервер рендеринга Mermaid-диаграмм с двухпанельным веб-UI (слева код, справа диаграмма)
 и встроенным MCP-сервером по протоколу SSE. Рендер в браузере — `mermaid.js`;
-генерация кода — `FoggyBalrog.MermaidDotNet`; опциональный серверный рендер в SVG/PNG — PuppeteerSharp.
+генерация кода — `FoggyBalrog.MermaidDotNet`; опциональный серверный рендер в SVG/PNG — `Mermaider` (чистый .NET, без Chromium).
 
 ## Возможности
 - Двухпанельный редактор: `<textarea>` (col-span-2) + канва (col-span-10), HTMX + Tailwind.
@@ -61,8 +61,35 @@ git graph, mind map, kanban, packet, pie, quadrant, requirement, timeline, sanke
 
 ## Серверный рендер (SVG/PNG)
 Выключен по умолчанию. Включить: в `appsettings.json` → `"Rendering": { "EnableServerRender": true }`.
-При первом запросе svg/png/validate PuppeteerSharp скачает Chromium (~150 МБ).
+Рендер чисто управляемый (`Mermaider` → SVG, `Svg.Skia`/SkiaSharp → PNG): ни браузера, ни
+загрузки Chromium, ни дочернего процесса. Веб-preview по-прежнему рисует `mermaid.js` в браузере
+(все ~18 типов); серверный рендер покрывает поднабор типов Mermaider (flowchart, sequence,
+class, state, ER, pie, quadrant, timeline, git graph, mind map и др.).
 
 ## Офлайн Tailwind (опционально)
 По умолчанию используется Tailwind Play-CDN. Для офлайна соберите статический `app.css`
 standalone-бинарём Tailwind и подключите вместо CDN-скрипта в `wwwroot/index.html`.
+
+
+## Deploy SystemD
+```bash
+[Unit]
+Description=Mermaid Server
+
+[Service]
+WorkingDirectory=/var/www/{folder}
+ExecStart=/var/www/{folder}/MermaidMcpServer --urls=http://localhost:40100/
+Restart=always
+
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=MermaidMcpServer
+
+User=root
+Environment=ASPNETCORE_ENVIRONMENT=Development
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target
+```
+

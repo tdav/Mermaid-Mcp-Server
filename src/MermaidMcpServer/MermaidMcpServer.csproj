@@ -8,8 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="FoggyBalrog.MermaidDotNet" Version="0.20.0" />
+    <PackageReference Include="Mermaider" Version="0.8.0" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.0.0-preview.1" />
-    <PackageReference Include="PuppeteerSharp" Version="25.3.1" />
+    <PackageReference Include="Svg.Skia" Version="5.1.1" />
   </ItemGroup>
 
   <ItemGroup>
