@@ -23,7 +23,8 @@ builder.Services
         transport.EnableLegacySse = true;
 #pragma warning restore MCP9004
     })
-    .WithTools<MermaidTools>();
+    .WithTools<MermaidTools>()
+    .WithTools<DiagramBuilderTools>();
 
 var app = builder.Build();
 
