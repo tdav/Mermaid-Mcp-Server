@@ -29,6 +29,7 @@ public sealed class HeadlessRenderer : IAsyncDisposable
         await page.EvaluateFunctionAsync(
             "async (code) => { const { svg } = await mermaid.render('g', code); document.getElementById('c').innerHTML = svg; }", code);
         var element = await page.QuerySelectorAsync("#c svg");
+        if (element is null) throw new InvalidOperationException("Mermaid produced no SVG element to render as PNG.");
         return await element.ScreenshotDataAsync();
     }
 
@@ -68,7 +69,11 @@ public sealed class HeadlessRenderer : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (this.browser is not null) await this.browser.DisposeAsync();
+        if (this.browser is not null)
+        {
+            await this.browser.DisposeAsync();
+            this.browser = null;
+        }
         this.gate.Dispose();
     }
 

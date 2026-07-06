@@ -7,7 +7,11 @@ document.body.addEventListener('htmx:afterSwap', (e) => {
   if (!node) return;
   node.removeAttribute('data-processed');
   mermaid.run({ nodes: [node] }).catch((err) => {
-    e.target.innerHTML = '<div class="diagram-error">' + String(err.message || err) + '</div>';
+    e.target.textContent = '';
+    const errDiv = document.createElement('div');
+    errDiv.className = 'diagram-error';
+    errDiv.textContent = String(err.message || err);
+    e.target.appendChild(errDiv);
   });
 });
 
