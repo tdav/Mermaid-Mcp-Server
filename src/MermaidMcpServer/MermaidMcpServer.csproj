@@ -12,4 +12,8 @@
     <PackageReference Include="PuppeteerSharp" Version="25.3.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="wwwroot\lib\mermaid.min.js" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

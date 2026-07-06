@@ -30,6 +30,11 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// Explicit UseRouting placed after static files: without it, WebApplication
+// auto-inserts routing at the top of the pipeline, so "/" (mapped by MapMcp)
+// would match before static files get a chance to serve wwwroot/index.html.
+app.UseRouting();
+
 app.MapMcp();
 
 app.MapPost("/render", (HttpRequest request) =>

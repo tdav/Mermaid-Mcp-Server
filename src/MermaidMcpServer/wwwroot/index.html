@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mermaid Renderer</title>
+  <link rel="stylesheet" href="/css/tokens.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      ember: '#FF6B2C', panel: '#363640', inset: '#1E1E26'
+    } } } };
+  </script>
+  <script src="/lib/htmx.min.js"></script>
+  <script src="/lib/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="grid grid-cols-12 gap-4 p-4" style="height:100vh;box-sizing:border-box;">
+    <div class="col-span-2 flex flex-col gap-2" style="min-height:0;">
+      <div class="flex items-center justify-between">
+        <label class="text-sm" style="color:var(--text-secondary)">Mermaid</label>
+        <button id="theme-toggle" class="btn-accent" style="padding:4px 8px;font-size:12px;">Theme</button>
+      </div>
+      <select id="examples" class="panel" style="padding:6px;color:var(--text-primary);background:var(--inset);"></select>
+      <textarea id="code" name="code" style="flex:1;"
+        hx-post="/render" hx-target="#canvas" hx-trigger="keyup changed delay:400ms, load"
+        placeholder="flowchart TD&#10;  A[Start] --> B[End]">flowchart TD
+  A[Start] --> B[End]</textarea>
+    </div>
+    <div class="col-span-10 panel" style="min-height:0;overflow:auto;padding:24px;">
+      <div id="canvas"></div>
+    </div>
+  </div>
+  <script src="/js/app.js"></script>
+</body>
+</html>
