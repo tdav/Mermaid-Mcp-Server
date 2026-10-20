@@ -86,6 +86,20 @@ curl -fsSL https://raw.githubusercontent.com/tdav/Mermaid-Mcp-Server/main/deploy
 `/etc/mermaid-mcp/mermaid.env`. Ручные команды: `deploy.sh --force | --status | --no-timer`
 (см. шапку `deploy/deploy.sh`).
 
+Реверс-прокси — готовый конфиг nginx в `deploy/nginx.conf` (открывает `/mcp`, `/files/` и
+веб-UI; инструкция по установке — в шапке файла).
+
+### Переход с SSE на `/mcp`
+Legacy-эндпоинт `/sse` удалён. После обновления сервера:
+1. Поставить/обновить `deploy/nginx.conf`: пути `/mcp` и `/files/` должны проходить через прокси.
+2. Переподключить MCP-клиентов на новый адрес:
+   ```bash
+   claude mcp remove mermaid
+   claude mcp add --transport http mermaid https://mermaid.example.com/mcp
+   ```
+   В Claude Desktop — заменить в `mcp-remote` адрес на `.../mcp` и флаг на `--transport http-only`
+   (см. «Подключение клиентов»), затем полностью перезапустить приложение.
+
 ## Deploy SystemD (вручную)
 ```bash
 [Unit]
