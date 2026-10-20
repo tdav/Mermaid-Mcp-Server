@@ -11,7 +11,7 @@ namespace MermaidMcpServer.Mcp;
 [McpServerToolType]
 public sealed class MermaidTools
 {
-    private const string DisabledMessage =
+    internal const string DisabledMessage =
         "Server-side rendering is disabled. Set Rendering:EnableServerRender=true to enable svg/png/validate.";
 
     private readonly RenderingOptions rendering;

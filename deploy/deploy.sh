@@ -174,6 +174,11 @@ Group=$RUN_USER
 WorkingDirectory=$APP_DIR
 ExecStart=/usr/bin/dotnet $APP_DIR/MermaidMcpServer.dll
 EnvironmentFile=$ENV_FILE
+# Файлы generate_mermaid_file — в /var/lib/mermaid-mcp (systemd создаёт его с владельцем
+# \$RUN_USER): \$APP_DIR деплой подменяет целиком, и ссылки на файлы сломались бы.
+# Переопределяется строкой Rendering__OutputDirectory в \$ENV_FILE (EnvironmentFile главнее).
+StateDirectory=mermaid-mcp
+Environment=Rendering__OutputDirectory=/var/lib/mermaid-mcp
 # Снаружи слушает только реверс-прокси; сервис — на loopback.
 Environment=ASPNETCORE_URLS=http://127.0.0.1:$PORT
 # Системному пользователю нужен записываемый HOME для кэшей dotnet / SkiaSharp.
