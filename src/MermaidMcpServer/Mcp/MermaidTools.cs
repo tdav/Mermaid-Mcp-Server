@@ -3,6 +3,7 @@ using MermaidMcpServer.Mermaid;
 using MermaidMcpServer.Options;
 using MermaidMcpServer.Rendering;
 using Microsoft.Extensions.Options;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace MermaidMcpServer.Mcp;
@@ -42,12 +43,21 @@ public sealed class MermaidTools
         if (!this.rendering.EnableServerRender)
             return DisabledMessage;
 
-        return format.ToLowerInvariant() switch
+        try
         {
-            "svg" => await this.renderer.RenderSvgAsync(code),
-            "png" => Convert.ToBase64String(await this.renderer.RenderPngAsync(code)),
-            _ => "Unknown format. Use code | svg | png.",
-        };
+            return format.ToLowerInvariant() switch
+            {
+                "svg" => await this.renderer.RenderSvgAsync(code),
+                "png" => Convert.ToBase64String(await this.renderer.RenderPngAsync(code)),
+                _ => "Unknown format. Use code | svg | png.",
+            };
+        }
+        catch (Exception e) when (e is not McpException)
+        {
+            // Без McpException SDK отдаёт клиенту только «An error occurred invoking ...»,
+            // и причину (например, нет нативной libSkiaSharp на сервере) видно лишь в логах.
+            throw new McpException($"Render to '{format}' failed: {e.GetType().Name}: {e.Message}", e);
+        }
     }
 
     [McpServerTool(Name = "validate_mermaid")]

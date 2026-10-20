@@ -96,6 +96,16 @@ preflight() {
     id -u "$RUN_USER" >/dev/null 2>&1 \
         || { useradd --system --no-create-home --shell /usr/sbin/nologin "$RUN_USER"; info "создан пользователь $RUN_USER"; }
 
+    # PNG рисует SkiaSharp. Mermaider меряет подписи метриками шрифта Inter; без него
+    # подставляется более широкий DejaVu, и текст вылезает за рамки блоков. На минимальном
+    # сервере шрифтов нет вовсе — тогда PNG выходит без текста. libfontconfig1 нужна
+    # libSkiaSharp.so на x64. Не критично для запуска сервиса, поэтому только предупреждение.
+    if command -v apt-get >/dev/null && ! dpkg -s fonts-inter libfontconfig1 >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends fonts-inter libfontconfig1 >/dev/null \
+            && info "установлены fonts-inter, libfontconfig1 (для PNG)" \
+            || info "! не удалось поставить fonts-inter/libfontconfig1: PNG может выйти без текста или со съехавшими подписями"
+    fi
+
     # Окружение сервиса. Создаётся один раз и дальше правится руками — деплой его не трогает.
     if [ ! -f "$ENV_FILE" ]; then
         install -d -m 0755 "$(dirname "$ENV_FILE")"

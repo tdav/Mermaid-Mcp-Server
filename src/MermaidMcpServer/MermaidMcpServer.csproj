@@ -11,6 +11,9 @@
     <PackageReference Include="Mermaider" Version="0.15.1" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.0.0-preview.1" />
     <PackageReference Include="Svg.Skia" Version="5.1.1" />
+    <!-- Нативная libSkiaSharp.so для Linux (x64/arm64/...): по умолчанию SkiaSharp приносит только Windows и macOS.
+         Версия обязана совпадать с управляемой SkiaSharp.dll (3.119.2 из Svg.Skia 5.1.1). -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.2" />
   </ItemGroup>
 
   <ItemGroup>
