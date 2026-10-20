@@ -12,17 +12,23 @@ namespace MermaidMcpServer.Rendering;
 // Task.Run only if diagram sizes ever make it block request threads noticeably.
 public sealed class HeadlessRenderer : IAsyncDisposable
 {
+    // Интервалы по умолчанию (28/56) уже подписи рёбер: подпись налезает на соседние узлы.
+    // 60/120 снимает это ценой ~6% по размеру холста.
+    private static readonly Mermaider.Models.RenderOptions LayoutOptions = new() { NodeSpacing = 60, LayerSpacing = 120 };
+
     private readonly RenderingOptions options;
 
     public HeadlessRenderer(IOptions<RenderingOptions> options) => this.options = options.Value;
 
     public bool IsEnabled => this.options.EnableServerRender;
 
+    // Separate разводит подписи (параллельные рёбра, края холста), Resolve заменяет
+    // color-mix()/var() конкретными цветами, иначе вне браузера узлы чёрные и текст не виден.
     public Task<string> RenderSvgAsync(string code) =>
-        Task.FromResult(MermaidRenderer.RenderSvg(code));
+        Task.FromResult(SvgColorResolver.Resolve(SvgLabelSeparator.Separate(MermaidRenderer.RenderSvg(code, LayoutOptions))));
 
     public Task<byte[]> RenderPngAsync(string code) =>
-        Task.FromResult(RasterizeToPng(MermaidRenderer.RenderSvg(code)));
+        Task.FromResult(RasterizeToPng(SvgColorResolver.Resolve(SvgLabelSeparator.Separate(MermaidRenderer.RenderSvg(code, LayoutOptions)))));
 
     public Task<(bool ok, string? error)> ValidateAsync(string code)
     {
