@@ -148,6 +148,17 @@ publish() {
 
 write_units() {
     log "3/5 systemd-юниты"
+    # libSkiaSharp.so для linux-arm64 (3.119.x) собрана с неразрешёнными символами
+    # FT_Get_BDF_Property (freetype) и uuid_* (libuuid) и не линкуется с этими библиотеками:
+    # первый же вызов PNG убивает процесс «symbol lookup error». Подгружаем их заранее.
+    local preload=""
+    if [ "$(uname -m)" = "aarch64" ]; then
+        local libdir ft uuid
+        libdir="$(dirname "$(ldconfig -p | awk '/libfreetype\.so\.6 .*aarch64/{print $NF; exit}')")"
+        ft="$libdir/libfreetype.so.6"; uuid="$libdir/libuuid.so.1"
+        if [ -e "$ft" ] && [ -e "$uuid" ]; then preload="Environment=LD_PRELOAD=$ft $uuid"
+        else info "! нет libfreetype6/libuuid1: PNG на arm64 уронит процесс"; fi
+    fi
     cat > "$SYSTEMD_DIR/$SERVICE.service" <<EOF
 [Unit]
 # Сгенерировано deploy/deploy.sh — правки затрутся следующим деплоем.
@@ -167,6 +178,7 @@ EnvironmentFile=$ENV_FILE
 Environment=ASPNETCORE_URLS=http://127.0.0.1:$PORT
 # Системному пользователю нужен записываемый HOME для кэшей dotnet / SkiaSharp.
 Environment=HOME=$APP_DIR
+$preload
 Restart=always
 RestartSec=5
 # ASP.NET завершается штатно по SIGINT; SIGTERM для него — жёсткое убийство.
