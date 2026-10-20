@@ -156,7 +156,7 @@ write_units() {
         local libdir ft uuid
         libdir="$(dirname "$(ldconfig -p | awk '/libfreetype\.so\.6 .*aarch64/{print $NF; exit}')")"
         ft="$libdir/libfreetype.so.6"; uuid="$libdir/libuuid.so.1"
-        if [ -e "$ft" ] && [ -e "$uuid" ]; then preload="Environment=LD_PRELOAD=$ft $uuid"
+        if [ -e "$ft" ] && [ -e "$uuid" ]; then preload="Environment=\"LD_PRELOAD=$ft $uuid\""
         else info "! нет libfreetype6/libuuid1: PNG на arm64 уронит процесс"; fi
     fi
     cat > "$SYSTEMD_DIR/$SERVICE.service" <<EOF
