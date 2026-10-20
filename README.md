@@ -71,7 +71,19 @@ class, state, ER, pie, quadrant, timeline, git graph, mind map и др.).
 standalone-бинарём Tailwind и подключите вместо CDN-скрипта в `wwwroot/index.html`.
 
 
-## Deploy SystemD
+## Автодеплой на Linux-сервер
+Один запуск от root ставит сервис и автообновление (таймер раз в 5 минут подтягивает
+`main`, пересобирает и перезапускает сервис; при неудаче откатывается на прежнюю версию).
+Нужны `git`, `curl`, systemd и .NET SDK 10.
+```bash
+curl -fsSL https://raw.githubusercontent.com/tdav/Mermaid-Mcp-Server/main/deploy/deploy.sh \
+  | sudo PUBLIC_BASE_URL=https://mermaid.example.com bash
+```
+Сервис слушает `127.0.0.1:40100` — наружу его отдаёт реверс-прокси. Окружение — в
+`/etc/mermaid-mcp/mermaid.env`. Ручные команды: `deploy.sh --force | --status | --no-timer`
+(см. шапку `deploy/deploy.sh`).
+
+## Deploy SystemD (вручную)
 ```bash
 [Unit]
 Description=Mermaid Server

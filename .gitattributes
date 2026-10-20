@@ -61,3 +61,6 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+# Shell-скрипты деплоя всегда с LF (иначе на Linux: "bad interpreter").
+*.sh text eol=lf
